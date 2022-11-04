@@ -1,3 +1,4 @@
+use clap::ArgMatches;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
@@ -48,4 +49,8 @@ pub fn store_data(data: &Data) {
             exit(1);
         }
     };
+}
+
+pub fn shnippet_name<'a>(arg_matches: &'a ArgMatches) -> Option<&'a str> {
+    arg_matches.subcommand().map(|sub|sub.0)
 }
