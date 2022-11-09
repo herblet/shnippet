@@ -42,22 +42,19 @@ pub fn delete(data: &mut Data, name: &str) {
 pub fn exec(name: &str) {
     let output = Command::new("sh")
         .arg(get_dir_path(format!("{}.sh", name)))
-        .output()
-        .expect("Error while executing shnippet");
+        .spawn();
 
-    println!("Shnippet executed with status {}", output.status);
-    println!("---");
-    println!("{}", style("stdout : ").bold().italic());
-    println!(
-        "{}",
-        String::from_utf8(output.stdout).unwrap_or_else(|_| "---???---".to_owned())
-    );
-    println!("---");
-    println!("{}", style("stderr : ").bold().italic());
-    println!(
-        "{}",
-        String::from_utf8(output.stderr).unwrap_or_else(|_| "---???---".to_owned())
-    );
+    match output {
+        Ok(mut child) => {
+            child.wait().unwrap();
+            exit(0);
+        }
+        Err(e) => {
+            eprintln!("{}", style("Error in executing shnippet : ").red());
+            eprintln!("{}", e);
+            exit(1);
+        }
+    }
 }
 
 pub fn new(data: &mut Data) {
