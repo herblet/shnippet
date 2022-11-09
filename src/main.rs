@@ -2,41 +2,29 @@ mod commands;
 mod constants;
 mod util;
 
-use clap::Command;
+use clap::{Arg, Command};
+use clap_complete::{generate, shells::Shell};
 use constants::*;
-use std::process::exit;
+use std::{io, process::exit, str::FromStr};
 use util::shnippet_name;
 
 fn main() {
     let mut data = util::setup();
 
-    let matches = require_subcommands(
-        Command::new("Shnippet")
-            .version("0.1.0")
-            .author("YJDoc2")
-            .about("Commandline snippet manager")
-            .subcommand(Command::new(LIST_COMMAND_NAME).about(LIST_COMMAND_DESCRIPTION))
-            .subcommand(Command::new(NEW_COMMAND_NAME).about(NEW_COMMAND_DESCRIPTION))
-            .subcommand(shnippet_list_command(
-                DELETE_COMMAND_NAME,
-                DESCRIPTION_COMMAND_NAME,
-                &data,
-                Some(DELETE_DESCRIPTION_TEMPLATE),
-            ))
-            .subcommand(shnippet_list_command(
-                EDIT_COMMAND_NAME,
-                EDIT_COMMAND_DESCRIPTION,
-                &data,
-                Some(EDIT_DESCRIPTION_TEMPLATE),
-            ))
-            .subcommand(shnippet_list_command(
-                EXEC_COMMAND_NAME,
-                EXEC_COMMAND_DESCRIPTION,
-                &data,
-                Option::None,
-            )),
-    )
-    .get_matches();
+    let matches = create_cli(&data).get_matches();
+
+    matches.get_one("completions").map(|shell_name: &String| {
+        match Shell::from_str(shell_name.as_str()) {
+            Ok(shell) => {
+                generate(shell, &mut create_cli(&data), "shnippet", &mut io::stdout());
+                exit(0);
+            }
+            Err(e) => {
+                eprintln!("Error reading shell name '{}': {}",shell_name, e);
+                exit(1);
+            }
+        }
+    });
 
     match matches.subcommand() {
         Some(("list", _)) => commands::list(&data),
@@ -67,6 +55,39 @@ fn main() {
         Some((_, _)) => report_error_exit(),
         None => report_error_exit(),
     }
+}
+
+fn create_cli(data: &util::Data) -> Command {
+    Command::new("Shnippet")
+        .version("0.1.0")
+        .author("YJDoc2")
+        .about("Commandline snippet manager")
+        .arg_required_else_help(true)
+        .arg(
+            Arg::new("completions")
+                .long("completions")
+                .help("Generate shell completions"),
+        )
+        .subcommand(Command::new(LIST_COMMAND_NAME).about(LIST_COMMAND_DESCRIPTION))
+        .subcommand(Command::new(NEW_COMMAND_NAME).about(NEW_COMMAND_DESCRIPTION))
+        .subcommand(shnippet_list_command(
+            DELETE_COMMAND_NAME,
+            DESCRIPTION_COMMAND_NAME,
+            data,
+            Some(DELETE_DESCRIPTION_TEMPLATE),
+        ))
+        .subcommand(shnippet_list_command(
+            EDIT_COMMAND_NAME,
+            EDIT_COMMAND_DESCRIPTION,
+            data,
+            Some(EDIT_DESCRIPTION_TEMPLATE),
+        ))
+        .subcommand(shnippet_list_command(
+            EXEC_COMMAND_NAME,
+            EXEC_COMMAND_DESCRIPTION,
+            data,
+            Option::None,
+        ))
 }
 
 fn report_error_exit() {
