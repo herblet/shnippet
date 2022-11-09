@@ -1,12 +1,10 @@
-mod commands;
-mod constants;
-mod util;
-
 use clap::{Arg, Command};
 use clap_complete::{generate, shells::Shell};
-use constants::*;
+use shnippet::commands;
+use shnippet::constants::*;
+use shnippet::util;
+use shnippet::util::shnippet_name;
 use std::{io, process::exit, str::FromStr};
-use util::shnippet_name;
 
 fn main() {
     let mut data = util::setup();
@@ -20,7 +18,7 @@ fn main() {
                 exit(0);
             }
             Err(e) => {
-                eprintln!("Error reading shell name '{}': {}",shell_name, e);
+                eprintln!("Error reading shell name '{}': {}", shell_name, e);
                 exit(1);
             }
         }
@@ -126,7 +124,7 @@ fn shnippet_sub_commands(data: &util::Data, template: Option<&str>) -> Vec<Comma
                         .replace(DESCRIPTION_PLACEHOLDER, description)
                         .to_owned()
                 })
-                .unwrap_or(description.clone());
+                .unwrap_or(description.to_owned());
             Command::new(name.clone()).about(about)
         })
         .collect();
